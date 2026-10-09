@@ -61,6 +61,7 @@ rather than by the order the sources happen to be listed in
 
 | Confidence | Source | File | Contributes |
 |---:|---|---|---|
+| 95 | Session title (omp, pi) | `session.go` | Activity |
 | 90 | Agent title | `agent.go` | Activity |
 | 80 | Terminal title | `terminal.go` | Activity |
 | 75 | Session transcript | `transcript.go` | Activity |
@@ -81,6 +82,16 @@ The numbering lives in one block because a source's place is only meaningful
 relative to the others, and the gaps are what make room for the next one.
 
 ## What each source knows
+
+### Session title
+
+omp and pi keep the name of a session in the session file their Herdr
+integration reports by path (`PaneInfo.agent_session`, kind `path`): omp as a
+`title` header and `title_change` records, pi as `session_info` records. The
+last one wins (`internal/session`). It outranks the agent title because Herdr
+fills an omp pane's `PaneInfo.title` with the first prompt, which never changes,
+and the terminal title carries the same name behind a status glyph and a
+spinner frame. An untitled session declines and the rungs below answer.
 
 ### Agent
 

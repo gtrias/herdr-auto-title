@@ -38,6 +38,9 @@ type PaneState struct {
 	// the transcript Herdr pointed at. Empty unless the agent's integration
 	// hook is installed — see docs/architecture/title-resolution.md.
 	AgentTopic string
+	// SessionTitle is the title the agent gave its own session, read from the
+	// session file Herdr pointed at. omp and pi only; see internal/session.
+	SessionTitle string
 	// AgentSession names the conversation that agent holds, which is how the
 	// transcript behind AgentTopic is found. Nil until the agent's integration
 	// reports one.

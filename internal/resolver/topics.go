@@ -21,6 +21,7 @@ func NewTopics(opts Options, maxLen int) *Topics {
 // is in title-resolution.md.
 func topicChain(opts Options) *Deterministic {
 	return New(opts,
+		NewSession(),
 		NewAgent(),
 		NewUnboundTerminalTitle(),
 		NewTranscript(),

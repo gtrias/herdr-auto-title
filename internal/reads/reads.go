@@ -10,6 +10,7 @@ import (
 	"github.com/kryptamine/herdr-auto-title/internal/claude"
 	"github.com/kryptamine/herdr-auto-title/internal/git"
 	"github.com/kryptamine/herdr-auto-title/internal/herdr"
+	"github.com/kryptamine/herdr-auto-title/internal/session"
 	"github.com/kryptamine/herdr-auto-title/internal/state"
 )
 
@@ -28,6 +29,7 @@ type Options struct {
 type Reader struct {
 	processes       *processCache
 	topics          *claude.Reader
+	titles          *session.Reader
 	log             *slog.Logger
 	readBranches    bool
 	readTranscripts bool
@@ -37,6 +39,7 @@ func New(opts Options, log *slog.Logger) *Reader {
 	return &Reader{
 		processes:       newProcessCache(),
 		topics:          claude.NewReader(opts.ClaudeDirs...),
+		titles:          session.NewReader(),
 		log:             log,
 		readBranches:    opts.BranchMax > 0,
 		readTranscripts: opts.ReadTranscripts,
@@ -49,6 +52,7 @@ func New(opts Options, log *slog.Logger) *Reader {
 func (r *Reader) Poll(client herdr.Client, panes []herdr.PaneInfo, drew map[string]bool) *Poll {
 	r.processes.observe(panes, drew)
 	r.topics.Retain(sessionsIn(panes))
+	r.titles.Retain(sessionsIn(panes))
 
 	return &Poll{
 		reader:    r,
@@ -94,6 +98,7 @@ func (p *Poll) Fill(ctx context.Context, pane *state.PaneState) {
 	// agent is working, and that is where the branch is read from.
 	topic := p.reader.topic(ctx, pane, dir)
 	pane.AgentTopic = topic.Text()
+	pane.SessionTitle = p.reader.sessionTitle(ctx, pane)
 	pane.Git = p.checkout(ctx, dir)
 	pane.AgentGit = p.checkout(ctx, topic.Dir)
 	pane.AgentDir = topic.Dir
@@ -168,6 +173,21 @@ func (r *Reader) topic(ctx context.Context, pane *state.PaneState, dir string) c
 	}
 
 	return r.topics.Topic(sessionID, dir)
+}
+
+// sessionTitle reports the title an omp or pi session gave itself, read from
+// the session file its Herdr integration reported by path.
+func (r *Reader) sessionTitle(ctx context.Context, pane *state.PaneState) string {
+	if !r.readTranscripts || spent(ctx) {
+		return ""
+	}
+
+	path, ok := pane.AgentSession.PathFor(session.Agents...)
+	if !ok {
+		return ""
+	}
+
+	return r.titles.Title(path)
 }
 
 // spent reports that the poll is past its deadline. The reads it guards go to

@@ -83,6 +83,25 @@ func (s *AgentSessionInfo) IDFor(agent string) (string, bool) {
 	return s.Value, true
 }
 
+// SessionRefPath is how an integration that knows its session file reports it.
+const SessionRefPath = "path"
+
+// PathFor reports the session file this reference names, and false unless it
+// names one, by path, for one of the given agents.
+func (s *AgentSessionInfo) PathFor(agents ...string) (string, bool) {
+	if s == nil || s.Kind != SessionRefPath || s.Value == "" {
+		return "", false
+	}
+
+	for _, agent := range agents {
+		if s.Agent == agent {
+			return s.Value, true
+		}
+	}
+
+	return "", false
+}
+
 // PaneProcessInfoProcess is one process running in a pane. Herdr reports the
 // joined command line too; a title is derived from the name, the arguments and
 // the directory the process itself is in, and the pid finds the foreground one.

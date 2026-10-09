@@ -29,6 +29,7 @@ const (
 	ConfidenceTranscript    = 75
 	ConfidenceTerminalTitle = 80
 	ConfidenceAgent         = 90
+	ConfidenceSession       = 95
 )
 
 // Parts are the components a source contributes to a title, formatted as
@@ -166,6 +167,7 @@ func New(opts Options, sources ...Source) *Deterministic {
 // what it contains.
 func Default(opts Options) *Deterministic {
 	return New(opts,
+		NewSession(),
 		NewAgent(),
 		NewTerminalTitle(),
 		NewTranscript(),
