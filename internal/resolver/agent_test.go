@@ -297,3 +297,55 @@ func TestAHiddenAgentNameKeepsAWorkspaceDirectory(t *testing.T) {
 		t.Errorf("name = %q, want dashboard", got.Name)
 	}
 }
+
+func TestAgentFieldSourcesShareOneGateAndReadOnlyTheirOwnField(t *testing.T) {
+	t.Parallel()
+
+	// NewAgent and NewTranscript are two rows of one source: each must be
+	// gated on the pane having an agent and read only the field it names,
+	// whatever the other field carries.
+	sources := []struct {
+		source Source
+		field  string
+		value  string
+	}{
+		{NewAgent(), "AgentTitle", "Implement OAuth scopes"},
+		{NewTranscript(), "AgentTopic", "grill-me"},
+	}
+
+	for _, row := range sources {
+		t.Run(row.source.Name(), func(t *testing.T) {
+			t.Parallel()
+
+			pane := &state.PaneState{
+				Dir:        dashboard,
+				AgentTitle: "Implement OAuth scopes",
+				AgentTopic: "grill-me",
+			}
+
+			if _, ok := row.source.Resolve(pane); ok {
+				t.Error("the source claimed a pane with no agent")
+			}
+
+			pane.Agent = "claude"
+			pane.AgentStatus = herdr.AgentStatusWorking
+
+			parts, ok := row.source.Resolve(pane)
+			if !ok {
+				t.Fatal("the source declined a pane with an agent")
+			}
+
+			if parts.Activity != row.value {
+				t.Errorf("activity = %q, want %q", parts.Activity, row.value)
+			}
+
+			if parts.Agent != "claude" {
+				t.Errorf("agent = %q, want claude", parts.Agent)
+			}
+
+			if row.source.Confidence() < ConfidenceTranscript {
+				t.Errorf("confidence = %d, below the transcript", row.source.Confidence())
+			}
+		})
+	}
+}
