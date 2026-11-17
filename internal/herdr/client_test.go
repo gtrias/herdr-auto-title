@@ -325,6 +325,35 @@ func TestRenameTabSendsTabAndLabel(t *testing.T) {
 	}
 }
 
+func TestRenamePaneSendsPaneAndLabel(t *testing.T) {
+	t.Parallel()
+
+	srv := newTestServer(t, respondOK)
+
+	if err := RenamePane(
+		context.Background(),
+		srv.client(),
+		"wE:t1.p2",
+		"agent › build",
+	); err != nil {
+		t.Fatalf("RenamePane: %v", err)
+	}
+
+	seen := srv.seen()
+	if len(seen) != 1 || seen[0].Method != MethodPaneRename {
+		t.Fatalf("server saw %+v, want one pane.rename", seen)
+	}
+
+	var params PaneRenameParams
+	if err := json.Unmarshal(seen[0].Params, &params); err != nil {
+		t.Fatalf("decode params: %v", err)
+	}
+
+	if params.PaneID != "wE:t1.p2" || params.Label != "agent › build" {
+		t.Errorf("params = %+v, want {wE:t1.p2 agent › build}", params)
+	}
+}
+
 func TestReportWorkspaceTopicSendsTheTokenAndItsLifetime(t *testing.T) {
 	t.Parallel()
 
